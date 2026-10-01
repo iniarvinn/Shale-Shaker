@@ -1,0 +1,18 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.env
+.netlify
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# Root .gitignore punya `lib/` untuk artefak build Python.
+# Batalkan di sini supaya src/lib/ tetap ikut ter-commit.
+!lib/
