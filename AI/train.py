@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""Train a YOLO segmentation model on the prepared PMLD stone dataset.
-
-Usage:
-  python prepare_dataset.py                 # build dataset/ first
-  python train.py                           # full run on GPU if available
-  python train.py --epochs 3 --fraction 0.1 # quick smoke test
-  python train.py --model yolo26n-seg.pt --epochs 100
-"""
 import argparse
 from pathlib import Path
 
