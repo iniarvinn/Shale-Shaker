@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Build a visual HTML report for a trained PMLD run and open it.
-
-Usage:
-  python explain.py                       # default run 'shaker'
-  python explain.py --run shaker-test
-"""
 import argparse
 import csv
 import html
