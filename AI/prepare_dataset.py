@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-"""Build a leak-free train/val/test split for the PMLD stone-segmentation dataset.
-
-The Roboflow export is 683 frames extracted from ONE video (pmld_mp4-0000..0682).
-Roboflow's own split is random, so ~60% of the training frames have a near-identical
-neighbour frame sitting in val/test -> the model memorises neighbours and val/test
-metrics are meaningless. This script regroups frames into temporal BLOCKS (K
-consecutive frames stay together), assigns whole blocks to splits, then drops a
-guard band so no two kept frames within `--gap` frames land in different splits.
-
-Use the native-resolution export (v2): the v1 yolo26/coco exports are resized to
-432x432, which turns the ~7px stones into ~1px and nothing learns.
-
-Usage:
-  python prepare_dataset.py
-  python prepare_dataset.py --block 80 --gap 10 --seed 42 --ratios 70,20,10
-  python prepare_dataset.py --zip ..\\Dataset\\PMLD.v2i.yolo26.zip --out dataset
-"""
 import argparse
 import random
 import re
