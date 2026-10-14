@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""Slice the prepared (leak-free) dataset into native-scale tiles for tiny stones.
-
-A 2560x1440 frame downscaled to imgsz 640 shrinks a ~7px stone to ~1.7px -> nothing
-learns. Tiling crops each frame into `--tile`-px tiles at (about) native scale so
-stones keep their pixel size, and re-projects polygon labels into each tile. Tiles
-inherit the source split, so the temporal leak-free guarantee is preserved.
-
-Run prepare_dataset.py first (it produces the split); this script tiles it.
-
-Usage:
-  python tile_dataset.py
-  python tile_dataset.py --tile 640 --overlap 128
-  python tile_dataset.py --keep-empty
-"""
 import argparse
 import shutil
 from pathlib import Path
