@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Run the trained PMLD model on images and report stone coverage per frame.
-
-If the model was trained on tiles (see tile_dataset.py), pass --tile to slice each
-full frame the same way and merge the per-tile masks back onto the original image.
-
-Usage:
-  python predict.py                                  # newest run, test split -> runs/predict
-  python predict.py --tile 640 --overlap 128         # tiled model on full frames
-  python predict.py --source path/to/img.jpg
-  python predict.py --model runs/segment/shaker-v2/weights/best.pt
-"""
 import argparse
 from pathlib import Path
 
