@@ -1,0 +1,6 @@
+path: D:\TUGAS ZAYYAN\Sem 5\PMLD\Shale-Shaker\AI\dataset
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: stone

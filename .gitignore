@@ -203,6 +203,20 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# Shale Shaker runtime files
+backend/uploads/*
+!backend/uploads/.gitkeep
+database/*.db
+database/*.db-*
+
+# Machine-learning artifacts and local datasets
+AI/runs/
+AI/dataset/*
+!/AI/dataset/data.yaml
+/Dataset/
+*.pt
+*.onnx
+
 # Ruff stuff:
 .ruff_cache/
 
