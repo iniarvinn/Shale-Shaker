@@ -12,9 +12,11 @@ type Props = {
   activeId?: string
   disabled: boolean
   onSelect: (video: VideoItem) => void
+  onDelete?: (id: string) => void
+  deleteDisabled?: boolean
 }
 
-export function HistoryCard({ videos, isLoading, activeId, disabled, onSelect }: Props) {
+export function HistoryCard({ videos, isLoading, activeId, disabled, onSelect, onDelete, deleteDisabled }: Props) {
   return (
     <Card className="rounded-xl border border-neutral-200 shadow-sm flex flex-col h-full">
       <CardHeader className=" px-4 flex-shrink-0">
@@ -49,6 +51,8 @@ export function HistoryCard({ videos, isLoading, activeId, disabled, onSelect }:
                       video={v}
                       isActive={activeId === v.id}
                       onSelect={onSelect}
+                      onDelete={onDelete}
+                      deleteDisabled={deleteDisabled}
                     />
                     <Separator className="bg-[#BFDDF8]" />
                   </div>

@@ -3,8 +3,10 @@ import { Navbar } from './Navbar'
 import { VideoUploadArea, type UploadState } from './VideoUploadArea'
 import { StoneCountCard } from './StoneCountCard'
 import { HistoryCard } from './HistoryCard'
+import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { useVideoHistory } from '#/hooks/useVideoHistory'
 import { useUploadVideo } from '#/hooks/useUploadVideo'
+import { useDeleteVideoMutation } from '#/hooks/videos'
 import type { VideoItem } from '#/types/video'
 import { validateVideoFile } from '#/lib/validateVideoFile'
 
@@ -13,8 +15,10 @@ type PreviewState = 'idle' | 'uploading' | 'success' | 'error' | null
 export function DashboardPage() {
   const [validationError, setValidationError] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const upload = useUploadVideo()
   const history = useVideoHistory()
+  const deleteMutation = useDeleteVideoMutation()
 
   const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const preview = (urlParams.get('state') as PreviewState) || null
@@ -81,6 +85,26 @@ export function DashboardPage() {
     setValidationError(false)
   }
 
+  const handleDelete = (id: string) => {
+    if (deleteMutation.isPending) return
+    setDeleteId(id)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!deleteId || deleteMutation.isPending) return
+    deleteMutation.mutate(deleteId, {
+      onSuccess: () => {
+        if (selectedVideo?.id === deleteId) {
+          handleReset()
+        }
+        setDeleteId(null)
+      },
+      onError: () => {
+        setDeleteId(null)
+      },
+    })
+  }
+
   const previewProgress = 39.8
 
   return (
@@ -107,11 +131,23 @@ export function DashboardPage() {
                 activeId={selectedVideo?.id}
                 disabled={upload.isPending}
                 onSelect={handleSelectHistory}
+                onDelete={handleDelete}
+                deleteDisabled={deleteMutation.isPending}
               />
             </div>
           </div>
         </div>
       </div>
+      <DeleteConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) {
+            setDeleteId(null)
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }

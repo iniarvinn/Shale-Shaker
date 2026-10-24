@@ -1,4 +1,4 @@
-import { CloudUpload, RotateCw, X } from 'lucide-react'
+import { CloudUpload, Plus, X } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 import type { VideoItem } from '#/types/video'
@@ -92,10 +92,10 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset }: Pro
           <Button
             type="button"
             onClick={onReset}
-            className="bg-brand-yellow text-neutral-800 hover:bg-[#E6C500] font-semibold text-sm px-6 h-9 rounded-lg shadow-md gap-2 cursor-pointer"
+            className="bg-brand-yellow text-neutral-800 hover:bg-[#E6C500] font-bold text-sm px-5 h-9 rounded-lg shadow-md gap-2 cursor-pointer py-2"
           >
-            Upload Ulang
-            <RotateCw className="w-4 h-4" />
+            Tambah Video
+            <Plus className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -131,7 +131,7 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset }: Pro
         <>
           <X className="w-9 h-9 text-danger stroke-[3]" />
           <p className="mt-2 text-base font-semibold text-neutral-700">File tidak sesuai</p>
-          <p className="mt-1 text-sm text-neutral-500">MP4, MOV (maks. 5 MB)</p>
+          <p className="mt-1 text-sm text-neutral-500">MP4, MOV (maks. 500 MB)</p>
         </>
       ) : state === 'uploading' ? (
         <div className="w-1/2 max-w-[480px] flex flex-col">
@@ -148,9 +148,9 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset }: Pro
           <CloudUpload className="w-10 h-10 text-brand-navbar" />
           <p className="mt-2 text-base font-semibold text-neutral-600">
             Drag & drop video disini, atau{' '}
-            <span className="text-brand-navbar font-bold underline">pilih file</span>
+            <span className="text-brand-navbar font-bold underline cursor-pointer">pilih file</span>
           </p>
-          <p className="mt-1 text-sm text-neutral-500">MP4, MOV (maks. 5 MB)</p>
+          <p className="mt-1 text-sm text-neutral-500">MP4, MOV (maks. 500 MB)</p>
         </>
       )}
     </div>
