@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navbar } from './Navbar'
-import { VideoUploadArea, type UploadState } from './VideoUploadArea'
+import { VideoUploadArea } from './VideoUploadArea'
+import type { UploadState } from './VideoUploadArea'
 import { StoneCountCard } from './StoneCountCard'
 import { HistoryCard } from './HistoryCard'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
@@ -8,12 +9,13 @@ import { useVideoHistory } from '#/hooks/useVideoHistory'
 import { useUploadVideo } from '#/hooks/useUploadVideo'
 import { useDeleteVideoMutation } from '#/hooks/videos'
 import type { VideoItem } from '#/types/video'
+import type { UploadError } from '#/types/ui'
 import { validateVideoFile } from '#/lib/validateVideoFile'
 
 type PreviewState = 'idle' | 'uploading' | 'success' | 'error' | null
 
 export function DashboardPage() {
-  const [validationError, setValidationError] = useState(false)
+  const [uploadError, setUploadError] = useState<UploadError>(null)
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const upload = useUploadVideo()
@@ -24,14 +26,27 @@ export function DashboardPage() {
   const preview = (urlParams.get('state') as PreviewState) || null
   const isDev = import.meta.env.DEV
 
+  const liveStoneCount = upload.liveStoneCount
+
   let activeVideo: VideoItem | null = selectedVideo ?? upload.data ?? null
+  if (upload.isPending && !selectedVideo) {
+    activeVideo = {
+      id: 'processing',
+      title: 'Sedang diproses',
+      label: '--:--',
+      thumbnailUrl: '/image-placeholder.png',
+      videoUrl: '',
+      stoneCount: liveStoneCount,
+      createdAt: new Date().toISOString(),
+    }
+  }
   let uiState: UploadState = upload.isPending
     ? 'uploading'
     : selectedVideo !== null
       ? 'success'
       : upload.isSuccess
         ? 'success'
-        : validationError || upload.isError
+        : uploadError || upload.isError
           ? 'error'
           : 'idle'
 
@@ -54,35 +69,36 @@ export function DashboardPage() {
     } else if (preview === 'error') {
       uiState = 'error'
       activeVideo = null
-    } else if (preview === 'idle') {
+    } else {
       uiState = 'idle'
       activeVideo = null
     }
   }
 
-  const stoneCount = uiState === 'success' ? (activeVideo?.stoneCount ?? 0) : 0
+  const stoneCount = uiState === 'success' || upload.isPending ? (activeVideo?.stoneCount ?? liveStoneCount) : 0
 
   const handleFile = (file: File) => {
     if (upload.isPending) return
-    if (!validateVideoFile(file)) {
-      setValidationError(true)
+    const validation = validateVideoFile(file)
+    if (!validation.ok) {
+      setUploadError(validation.error || { kind: 'validation', message: 'File tidak sesuai.' })
       return
     }
-    setValidationError(false)
+    setUploadError(null)
     setSelectedVideo(null)
     upload.mutate(file)
   }
 
   const handleSelectHistory = (video: VideoItem) => {
     if (upload.isPending) return
-    setValidationError(false)
+    setUploadError(null)
     setSelectedVideo(video)
   }
 
   const handleReset = () => {
     upload.reset()
     setSelectedVideo(null)
-    setValidationError(false)
+    setUploadError(null)
   }
 
   const handleDelete = (id: string) => {
@@ -120,6 +136,15 @@ export function DashboardPage() {
               video={activeVideo}
               onFile={handleFile}
               onReset={handleReset}
+              error={
+                uploadError ||
+                (upload.isError
+                  ? {
+                      kind: 'processing',
+                      message: upload.error.message || 'Proses deteksi gagal.',
+                    }
+                  : null)
+              }
             />
           </div>
           <div className="lg:col-span-4 flex flex-col gap-4 min-h-0">

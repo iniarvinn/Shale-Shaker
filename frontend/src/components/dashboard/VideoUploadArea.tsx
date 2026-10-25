@@ -1,7 +1,8 @@
-import { CloudUpload, Plus, X } from 'lucide-react'
+import { CloudUpload, Plus, RotateCw, X } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 import type { VideoItem } from '#/types/video'
+import type { UploadError } from '#/types/ui'
 import { useRef, useState } from 'react'
 import { UploadProgressBar } from './UploadProgressBar'
 
@@ -13,9 +14,10 @@ type Props = {
   video: VideoItem | null
   onFile: (file: File) => void
   onReset: () => void
+  error?: UploadError | null
 }
 
-export function VideoUploadArea({ state, progress, video, onFile, onReset }: Props) {
+export function VideoUploadArea({ state, progress, video, onFile, onReset, error }: Props) {
   const [isDragging, setIsDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -70,10 +72,8 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset }: Pro
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) {
-      onFile(file)
-    }
+    const file = e.dataTransfer.files[0]
+    onFile(file)
   }
 
   if (state === 'success' && video) {
@@ -122,7 +122,7 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset }: Pro
       <input
         ref={inputRef}
         type="file"
-        accept="video/mp4,video/quicktime,.mp4,.mov"
+        accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,.mp4,.mov,.avi,.mkv,.webm"
         hidden
         onChange={handleFileChange}
       />
@@ -130,8 +130,18 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset }: Pro
       {state === 'error' ? (
         <>
           <X className="w-9 h-9 text-danger stroke-[3]" />
-          <p className="mt-2 text-base font-semibold text-neutral-700">File tidak sesuai</p>
-          <p className="mt-1 text-sm text-neutral-500">MP4, MOV (maks. 500 MB)</p>
+          <p className="mt-2 max-w-[80%] text-base font-semibold text-neutral-700 text-center px-4">{error?.message || 'Terjadi kesalahan'}</p>
+          <p className="mt-1 text-sm text-neutral-500">MP4, MOV, AVI, MKV, WebM (maks. 500 MB)</p>
+          <div className="mt-4 flex justify-center">
+            <Button
+              type="button"
+              onClick={onReset}
+              className="bg-brand-yellow text-neutral-800 hover:bg-[#E6C500] font-semibold text-sm px-6 h-9 rounded-lg shadow-md gap-2 cursor-pointer"
+            >
+              Coba Lagi
+              <RotateCw className="w-4 h-4" />
+            </Button>
+          </div>
         </>
       ) : state === 'uploading' ? (
         <div className="w-1/2 max-w-[480px] flex flex-col">
@@ -140,7 +150,10 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset }: Pro
           </div>
           <UploadProgressBar value={progress} />
           <div className="mt-4 text-center text-base font-medium text-[#4A4A4A]">
-            Mengunggah video...
+            Mengunggah video
+            <span className="dot-blink">.</span>
+            <span className="dot-blink">.</span>
+            <span className="dot-blink">.</span>
           </div>
         </div>
       ) : (
@@ -150,7 +163,7 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset }: Pro
             Drag & drop video disini, atau{' '}
             <span className="text-brand-navbar font-bold underline cursor-pointer">pilih file</span>
           </p>
-          <p className="mt-1 text-sm text-neutral-500">MP4, MOV (maks. 500 MB)</p>
+          <p className="mt-1 text-sm text-neutral-500">MP4, MOV, AVI, MKV, WebM (maks. 500 MB)</p>
         </>
       )}
     </div>

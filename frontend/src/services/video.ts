@@ -57,7 +57,7 @@ export async function getVideoHistory(): Promise<VideoItem[]> {
     const h = Math.floor(Math.random() * 24)
     const m = Math.floor(Math.random() * 60)
     const s = Math.floor(Math.random() * 60)
-    let d = new Date(year, now.getMonth(), now.getDate() - daysBack, h, m, s)
+    const d = new Date(year, now.getMonth(), now.getDate() - daysBack, h, m, s)
     // jika lebih lama dari tahun ini, pakai tahun sebelumnya
     if (d.getTime() > now.getTime()) {
       d.setFullYear(year - 1)
