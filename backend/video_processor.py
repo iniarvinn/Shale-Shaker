@@ -1,9 +1,65 @@
+import os
+import shutil
+import subprocess
 from pathlib import Path
 
 try:
     from .detector import StoneDetector
 except ImportError:
     from detector import StoneDetector
+
+
+def _find_ffmpeg():
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg:
+        return ffmpeg
+    # Fallback to common locations
+    local = Path(__file__).resolve().parent / "ffmpeg.exe"
+    if local.is_file():
+        return str(local)
+    return None
+
+
+def _remux_to_browser_friendly(output_path: Path):
+    ffmpeg_path = _find_ffmpeg()
+    if not ffmpeg_path or not output_path.is_file():
+        return
+    temp_path = output_path.with_name(f"{output_path.stem}.browser_tmp.mp4")
+    try:
+        cmd = [
+            ffmpeg_path,
+            "-y",
+            "-i",
+            str(output_path),
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            "-map",
+            "0:v:0",
+            "-an",
+            str(temp_path),
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0 and temp_path.is_file() and temp_path.stat().st_size > 0:
+            os.replace(temp_path, output_path)
+        elif temp_path.is_file():
+            try:
+                temp_path.unlink()
+            except Exception:
+                pass
+    except Exception:
+        if temp_path.is_file():
+            try:
+                temp_path.unlink()
+            except Exception:
+                pass
 
 
 def process_video(input_path, output_path, thumbnail_path, on_progress):
@@ -27,10 +83,10 @@ def process_video(input_path, output_path, thumbnail_path, on_progress):
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    fourcc = cv2.VideoWriter_fourcc(*"avc1")
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(str(output_path), fourcc, fps, (width, height))
     if not writer.isOpened():
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fourcc = cv2.VideoWriter_fourcc(*"avc1")
         writer = cv2.VideoWriter(str(output_path), fourcc, fps, (width, height))
 
     if not writer.isOpened():
@@ -79,6 +135,9 @@ def process_video(input_path, output_path, thumbnail_path, on_progress):
 
     if processed == 0:
         raise ValueError("Video contains no readable frames")
+
+    _remux_to_browser_friendly(output_path)
+
     on_progress(100, {
         "status": "processing",
         "total_frames": total_frames or processed,

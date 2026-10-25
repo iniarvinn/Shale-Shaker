@@ -18,7 +18,7 @@ type Props = {
 
 export function HistoryCard({ videos, isLoading, activeId, disabled, onSelect, onDelete, deleteDisabled }: Props) {
   return (
-    <Card className="rounded-xl border border-neutral-200 shadow-sm flex flex-col h-full">
+    <Card className="rounded-xl border border-neutral-200 shadow-sm flex flex-col">
       <CardHeader className=" px-4 flex-shrink-0">
         <CardTitle className="text-base font-bold text-brand-text">History</CardTitle>
       </CardHeader>

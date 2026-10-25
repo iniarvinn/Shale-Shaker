@@ -44,4 +44,5 @@ class StoneDetector:
         return self._model
 
     def predict(self, frame):
-        return self._get_model()(frame, conf=0.25, verbose=False, retina_masks=True)[0]
+        conf_thresh = float(os.getenv("SHALE_SHAKER_CONF", "0.08"))
+        return self._get_model()(frame, conf=conf_thresh, verbose=False, retina_masks=True)[0]
