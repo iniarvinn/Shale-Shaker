@@ -9,13 +9,13 @@ HERE = Path(__file__).resolve().parent
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=str(HERE / "dataset" / "data.yaml"))
+    ap.add_argument("--data", default=str(HERE / "dataset_tiled" / "data.yaml"))
     ap.add_argument("--model", default="yolo26s-seg.pt",
                     help="base weights: yolo26n/s/m-seg.pt (n is smallest/fastest)")
-    ap.add_argument("--epochs", type=int, default=100)
-    ap.add_argument("--imgsz", type=int, default=640)
-    ap.add_argument("--batch", type=int, default=16)
-    ap.add_argument("--patience", type=int, default=20, help="early-stop patience")
+    ap.add_argument("--epochs", type=int, default=50)
+    ap.add_argument("--imgsz", type=int, default=1280)
+    ap.add_argument("--batch", type=int, default=2)
+    ap.add_argument("--patience", type=int, default=0, help="early-stop patience (0 = off)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--name", default="shaker")
     ap.add_argument("--device", default=None, help="'0' for first GPU, 'cpu'; default auto")

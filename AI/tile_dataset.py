@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import shutil
+import zlib
 from pathlib import Path
 
 import cv2
@@ -11,7 +12,6 @@ IMG_EXT = {".jpg", ".jpeg", ".png"}
 
 
 def origins(size, tile, stride):
-    """Tile start offsets along one axis, covering [0, size] with the last tile flush."""
     if size <= tile:
         return [0]
     o = list(range(0, size - tile + 1, stride))
@@ -21,7 +21,6 @@ def origins(size, tile, stride):
 
 
 def parse_lines(text):
-    """YOLO polygon label lines -> [(cls_str, Nx2 pixel points)] on a WxH frame."""
     out = []
     for ln in text.splitlines():
         p = ln.split()
@@ -33,12 +32,6 @@ def parse_lines(text):
 
 
 def reproject(text, W, H, tile, stride):
-    """Assign each polygon to every tile that fully contains it, in tile-normalized coords.
-
-    "Fully contained" (not clipped) is enough here because stones (~<=42px) are far
-    smaller than the tile overlap, so every stone sits whole inside at least one tile.
-    ponytail: no polygon clipping; add Sutherland-Hodgman if objects can exceed overlap.
-    """
     polys = [(cls, pts * (W, H)) for cls, pts in parse_lines(text)]
     tiles = {}
     for y0 in origins(H, tile, stride):
@@ -60,9 +53,11 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--src", default=str(here / "dataset"))
     ap.add_argument("--out", default=str(here / "dataset_tiled"))
-    ap.add_argument("--tile", type=int, default=640)
+    ap.add_argument("--tile", type=int, default=512,
+                    help="crop size in source px; with imgsz 1280 this sets magnification")
     ap.add_argument("--overlap", type=int, default=128, help="must exceed the largest stone")
-    ap.add_argument("--keep-empty", action="store_true", help="also write tiles with no labels (default: drop them)")
+    ap.add_argument("--empty-frac", type=float, default=0.15,
+                    help="share of empty tiles kept for train/val; test keeps all (negatives)")
     args = ap.parse_args()
 
     stride = args.tile - args.overlap
@@ -74,7 +69,7 @@ def main():
         (out / "images" / n).mkdir(parents=True, exist_ok=True)
         (out / "labels" / n).mkdir(parents=True, exist_ok=True)
 
-    total = kept = empty = 0
+    total = kept = empty = neg = 0
     for n in SPLITS:
         for img_path in sorted((src / "images" / n).iterdir()):
             if img_path.suffix.lower() not in IMG_EXT:
@@ -88,13 +83,17 @@ def main():
             tiles = reproject(text, W, H, args.tile, stride)
             for i, ((x0, y0), lines) in enumerate(tiles.items()):
                 total += 1
+                name = f"{img_path.stem}_t{i:03d}"
                 if not lines:
                     empty += 1
-                    if not args.keep_empty:
+                    # deterministic sample (crc32 of the name, not hash() which is salted)
+                    frac = 1.0 if n == "test" else args.empty_frac
+                    if zlib.crc32(name.encode()) % 1000 >= 1000 * frac:
                         continue
+                    neg += 1
                 crop = img[y0:y0 + args.tile, x0:x0 + args.tile]
-                name = f"{img_path.stem}_t{i:03d}"
-                cv2.imwrite(str(out / "images" / n / f"{name}.jpg"), crop)
+                # PNG: a 4-8px stone's edge is what the mask head learns, don't JPEG it twice
+                cv2.imwrite(str(out / "images" / n / f"{name}.png"), crop)
                 (out / "labels" / n / f"{name}.txt").write_text("\n".join(lines), encoding="utf-8")
                 kept += 1
         print(f"{n:6}: done")
@@ -110,8 +109,8 @@ def main():
     print(f"\nsource    : {src.resolve()}")
     print(f"output    : {out.resolve()}")
     print(f"tiles     : {total} produced, {kept} written, {empty} empty "
-          f"({'kept' if args.keep_empty else 'dropped'})")
-    print(f"tile={args.tile} overlap={args.overlap} stride={stride}")
+          f"({neg} kept as negatives); png")
+    print(f"tile={args.tile} overlap={args.overlap} stride={stride} empty-frac={args.empty_frac}")
     print(f"data.yaml -> {out / 'data.yaml'}")
 
 

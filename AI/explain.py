@@ -14,7 +14,6 @@ HERE = Path(__file__).resolve().parent
 
 
 def latest_run(root):
-    """Newest runs/segment/*/ with both results.csv and weights/best.pt."""
     cands = [d for d in root.glob("*")
              if (d / "results.csv").exists() and (d / "weights" / "best.pt").exists()]
     if not cands:
@@ -22,12 +21,15 @@ def latest_run(root):
     return max(cands, key=lambda p: p.stat().st_mtime)
 
 
-def last_row(run):
-    return list(csv.DictReader((run / "results.csv").open()))[-1]
+def best_row(run):
+    rows = list(csv.DictReader((run / "results.csv").open()))
+    return max(rows, key=lambda r: (
+        0.1 * float(r["metrics/mAP50-95(M)"]) + 0.9 * float(r["metrics/mAP50(M)"])
+        + 0.1 * float(r["metrics/mAP50-95(B)"]) + 0.9 * float(r["metrics/mAP50(B)"])))
 
 
 def key_facts(run):
-    r = last_row(run)
+    r = best_row(run)
     return [
         ("What it detects", "Stone/cuttings regions on a shale shaker (1 class: stone), as pixel masks"),
         ("Model", "YOLO26 instance segmentation"),
@@ -103,7 +105,7 @@ def build(run, tile=0, overlap=128):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default=None, help="run dir (default: newest completed run under runs/segment)")
-    ap.add_argument("--tile", type=int, default=0, help="tile size if the model was trained on tiles")
+    ap.add_argument("--tile", type=int, default=512, help="tile size if the model was trained on tiles (0 = full frames)")
     ap.add_argument("--overlap", type=int, default=128)
     args = ap.parse_args()
     args.run = args.run or str(latest_run(HERE / "runs" / "segment"))

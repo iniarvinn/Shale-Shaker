@@ -16,8 +16,6 @@ def parse_frame(stem):
 
 
 def assign_splits(frames, block, ratios, seed):
-    """Group frames into blocks of `block` consecutive frame-ids, shuffle blocks,
-    greedily assign each block to whatever split is furthest below its target ratio."""
     blocks = {}
     for f in frames:
         blocks.setdefault(f // block, []).append(f)
@@ -37,7 +35,6 @@ def assign_splits(frames, block, ratios, seed):
 
 
 def guard_splits(assign, gap):
-    """Drop any frame within +/-gap that has a neighbour in a different split."""
     kept, dropped = {}, []
     for f, s in assign.items():
         leaked = any(assign.get(n) not in (None, s)

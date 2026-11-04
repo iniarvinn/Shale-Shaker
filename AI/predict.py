@@ -12,7 +12,6 @@ HERE = Path(__file__).resolve().parent
 
 
 def latest_weights(root):
-    """Newest runs/segment/*/weights/best.pt (by mtime)."""
     cands = list(root.glob("*/weights/best.pt"))
     if not cands:
         raise SystemExit(f"no trained weights under {root}\\*/weights\\best.pt; run train.py first or pass --model")
@@ -20,7 +19,6 @@ def latest_weights(root):
 
 
 def tiled_predict(model, img, tile, overlap, conf):
-    """Slice `img`, run the model per tile, merge masks -> (coverage canvas, boxes)."""
     H, W = img.shape[:2]
     stride = tile - overlap
     canvas = np.zeros((H, W), np.uint8)
@@ -49,7 +47,7 @@ def main():
     ap.add_argument("--out", default=str(HERE / "runs" / "predict"))
     ap.add_argument("--conf", type=float, default=0.25)
     ap.add_argument("--limit", type=int, default=0, help="max images (0 = all)")
-    ap.add_argument("--tile", type=int, default=0, help="tile size for full-frame inference (0 = off)")
+    ap.add_argument("--tile", type=int, default=512, help="tile size for full-frame inference (0 = off; tiled models need this)")
     ap.add_argument("--overlap", type=int, default=128)
     args = ap.parse_args()
 
