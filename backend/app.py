@@ -5,9 +5,11 @@ from uuid import uuid4
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_file
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 load_dotenv(BASE_DIR.parent / ".env")
 
 try:
@@ -30,6 +32,7 @@ for directory in (ORIGINAL_DIR, PROCESSED_DIR, THUMBNAIL_DIR):
     directory.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES
 storage = Storage()
 executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="video-detector")
@@ -157,10 +160,20 @@ def video_result(video_id):
         return jsonify({"error": "Video not found"}), 404
     if video["status"] != "completed" or not video["result_path"]:
         return jsonify({"error": "Processed video is not available", "status": video["status"]}), 409
+
     result_path = Path(video["result_path"])
     if not result_path.is_file():
-        return jsonify({"error": "Processed video file is missing"}), 404
-    return send_file(result_path, mimetype="video/mp4", as_attachment=False)
+        # Fallback to current project PROCESSED_DIR
+        fallback_by_id = PROCESSED_DIR / f"{video_id}.mp4"
+        fallback_by_name = PROCESSED_DIR / result_path.name
+        if fallback_by_id.is_file():
+            result_path = fallback_by_id
+        elif fallback_by_name.is_file():
+            result_path = fallback_by_name
+        else:
+            return jsonify({"error": "Processed video file is missing"}), 404
+
+    return send_file(result_path, mimetype="video/mp4", as_attachment=False, conditional=True)
 
 
 @app.get("/api/videos/<video_id>/thumbnail")
@@ -168,10 +181,19 @@ def video_thumbnail(video_id):
     video = storage.get_video(video_id)
     if not video or not video["thumbnail_path"]:
         return jsonify({"error": "Thumbnail not found"}), 404
+
     thumbnail_path = Path(video["thumbnail_path"])
     if not thumbnail_path.is_file():
-        return jsonify({"error": "Thumbnail file is missing"}), 404
-    return send_file(thumbnail_path, mimetype="image/jpeg")
+        fallback_by_id = THUMBNAIL_DIR / f"{video_id}.jpg"
+        fallback_by_name = THUMBNAIL_DIR / thumbnail_path.name
+        if fallback_by_id.is_file():
+            thumbnail_path = fallback_by_id
+        elif fallback_by_name.is_file():
+            thumbnail_path = fallback_by_name
+        else:
+            return jsonify({"error": "Thumbnail file is missing"}), 404
+
+    return send_file(thumbnail_path, mimetype="image/jpeg", conditional=True)
 
 
 @app.delete("/api/videos/<video_id>")
@@ -180,9 +202,14 @@ def delete_video(video_id):
     if not video:
         return jsonify({"error": "Video not found"}), 404
     storage.delete_video(video_id)
-    for path in (video["original_path"], video["result_path"], video["thumbnail_path"]):
-        if path:
-            Path(path).unlink(missing_ok=True)
+    for raw_path in (video["original_path"], video["result_path"], video["thumbnail_path"]):
+        if raw_path:
+            p = Path(raw_path)
+            p.unlink(missing_ok=True)
+            # Also try removing by name from current directories
+            (ORIGINAL_DIR / p.name).unlink(missing_ok=True)
+            (PROCESSED_DIR / p.name).unlink(missing_ok=True)
+            (THUMBNAIL_DIR / p.name).unlink(missing_ok=True)
     return jsonify({"message": "Video history deleted", "id": video_id})
 
 

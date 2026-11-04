@@ -1,6 +1,12 @@
 import os
 from pathlib import Path
 from threading import Lock
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+# Load .env from backend directory or project root
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")
 
 
 class DetectorError(RuntimeError):
@@ -19,16 +25,28 @@ class StoneDetector:
         configured = os.getenv("SHALE_SHAKER_MODEL")
         if configured:
             path = Path(configured)
-            if not path.is_file():
-                raise DetectorError(f"Configured model does not exist: {path}")
-            return path
-        root = Path(__file__).resolve().parent.parent / "AI" / "runs" / "segment"
-        candidates = list(root.glob("*/weights/best.pt"))
-        if not candidates:
-            raise DetectorError(
-                "No trained model found. Set SHALE_SHAKER_MODEL or place best.pt under AI/runs/segment/*/weights."
-            )
-        return max(candidates, key=lambda path: path.stat().st_mtime)
+            if path.is_file():
+                return path
+
+        # Check local backend model directory
+        local_model = BASE_DIR / "model" / "best.pt"
+        if local_model.is_file():
+            return local_model
+
+        # Check trained models under AI/runs/segment
+        ai_runs = BASE_DIR.parent / "AI" / "runs" / "segment"
+        candidates = list(ai_runs.glob("*/weights/best.pt"))
+        if candidates:
+            return max(candidates, key=lambda p: p.stat().st_mtime)
+
+        # Check weights/ directory at project root
+        root_weights = list((BASE_DIR.parent / "weights").glob("*.pt"))
+        if root_weights:
+            return root_weights[0]
+
+        raise DetectorError(
+            "No trained model found. Set SHALE_SHAKER_MODEL or place best.pt under backend/model/ or AI/runs/segment/*/weights."
+        )
 
     def _get_model(self):
         if self._model is None:
