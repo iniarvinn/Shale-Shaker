@@ -1,23 +1,48 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navbar } from './Navbar'
 import { VideoUploadArea } from './VideoUploadArea'
 import type { UploadState } from './VideoUploadArea'
-import { StoneCountCard } from './StoneCountCard'
+import { StoneChartCard } from './StoneChartCard'
 import { HistoryCard } from './HistoryCard'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { useVideoHistory } from '#/hooks/useVideoHistory'
 import { useUploadVideo } from '#/hooks/useUploadVideo'
 import { useDeleteVideoMutation } from '#/hooks/videos'
-import type { VideoItem } from '#/types/video'
+import type { StonePoint, VideoItem } from '#/types/video'
 import type { UploadError } from '#/types/ui'
 import { validateVideoFile } from '#/lib/validateVideoFile'
 
 type PreviewState = 'idle' | 'uploading' | 'success' | 'error' | null
 
+// Data contoh untuk preview DEV (?state=...), tanpa backend
+function mockStonePoint(second: number): StonePoint {
+  return { second, stones: Math.round((8 + 6 * Math.sin(second / 3) + ((second * 7) % 5)) * 25) }
+}
+const MOCK_SERIES: StonePoint[] = Array.from({ length: 43 }, (_, i) => mockStonePoint(i))
+
+function useMockLiveSeries(enabled: boolean): StonePoint[] {
+  const [series, setSeries] = useState<StonePoint[]>([])
+  useEffect(() => {
+    if (!enabled) {
+      setSeries([])
+      return
+    }
+    let second = 0
+    setSeries([mockStonePoint(0)])
+    const id = setInterval(() => {
+      second += 1
+      setSeries((prev) => [...prev, mockStonePoint(second)])
+    }, 1000)
+    return () => clearInterval(id)
+  }, [enabled])
+  return series
+}
+
 export function DashboardPage() {
   const [uploadError, setUploadError] = useState<UploadError>(null)
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const upload = useUploadVideo()
   const history = useVideoHistory()
   const deleteMutation = useDeleteVideoMutation()
@@ -27,6 +52,7 @@ export function DashboardPage() {
   const isDev = import.meta.env.DEV
 
   const liveStoneCount = upload.liveStoneCount
+  const mockLiveSeries = useMockLiveSeries(isDev && preview === 'uploading')
 
   let activeVideo: VideoItem | null = selectedVideo ?? upload.data ?? null
   if (upload.isPending && !selectedVideo) {
@@ -37,6 +63,7 @@ export function DashboardPage() {
       thumbnailUrl: '/image-placeholder.png',
       videoUrl: '',
       stoneCount: liveStoneCount,
+      stoneSeries: upload.liveSeries,
       createdAt: new Date().toISOString(),
     }
   }
@@ -64,6 +91,7 @@ export function DashboardPage() {
         thumbnailUrl: '/image-placeholder.png',
         videoUrl: '/pmld.mp4',
         stoneCount: 1532,
+        stoneSeries: MOCK_SERIES,
         createdAt: new Date('2026-11-13T00:00:00.000Z').toISOString(),
       }
     } else if (preview === 'error') {
@@ -75,7 +103,15 @@ export function DashboardPage() {
     }
   }
 
-  const stoneCount = uiState === 'success' || upload.isPending ? (activeVideo?.stoneCount ?? liveStoneCount) : 0
+  const isLive = upload.isPending || (isDev && preview === 'uploading')
+  let stoneSeries: StonePoint[] = []
+  if (isDev && preview === 'uploading') {
+    stoneSeries = mockLiveSeries
+  } else if (upload.isPending) {
+    stoneSeries = upload.liveSeries
+  } else if (uiState === 'success') {
+    stoneSeries = activeVideo?.stoneSeries ?? []
+  }
 
   const handleFile = (file: File) => {
     if (upload.isPending) return
@@ -136,6 +172,7 @@ export function DashboardPage() {
               video={activeVideo}
               onFile={handleFile}
               onReset={handleReset}
+              videoRef={videoRef}
               error={
                 uploadError ||
                 (upload.isError
@@ -148,7 +185,11 @@ export function DashboardPage() {
             />
           </div>
           <div className="lg:col-span-4 flex flex-col gap-4 min-h-0">
-            <StoneCountCard count={stoneCount} />
+            <StoneChartCard
+              series={stoneSeries}
+              isLive={isLive}
+              videoRef={uiState === 'success' && !isLive ? videoRef : undefined}
+            />
             <div className="flex-1 min-h-0">
               <HistoryCard
                 videos={history.data ?? []}

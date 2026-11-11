@@ -40,6 +40,7 @@ export async function uploadVideo(
           thumbnailUrl: '/image-placeholder.png',
           videoUrl: URL.createObjectURL(file),
           stoneCount: 120 + Math.floor(Math.random() * 2400), // bervariasi
+          stoneSeries: [],
           createdAt: now.toISOString(),
         }
         resolve(item)
@@ -70,6 +71,7 @@ export async function getVideoHistory(): Promise<VideoItem[]> {
       thumbnailUrl: '/image-placeholder.png',
       videoUrl: '/pmld.mp4',
       stoneCount: 150 + ((i * 137 + n * 89) % 2500),
+      stoneSeries: [],
       createdAt: d.toISOString(),
     }
   }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

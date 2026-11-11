@@ -1,3 +1,4 @@
+import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -42,10 +43,22 @@ def utc_now():
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def parse_series(raw):
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        return raw
+    try:
+        return json.loads(raw)
+    except (TypeError, ValueError):
+        return []
+
+
 def video_response(video):
     if not video:
         return None
     video = dict(video)
+    video["stones_per_second_series"] = parse_series(video.get("stones_per_second_series"))
     video["result_url"] = f"/api/videos/{video['id']}/result"
     video["thumbnail_url"] = f"/api/videos/{video['id']}/thumbnail"
     return video
@@ -150,6 +163,10 @@ def video_status(video_id):
         "processed_frames": video["processed_frames"],
         "total_frames": video["total_frames"],
         "error_message": video["error_message"],
+        "stones_per_second": video["stones_per_second"],
+        "current_stones_per_second": video["current_stones_per_second"],
+        "max_stones_per_second": video["max_stones_per_second"],
+        "stones_per_second_series": parse_series(video["stones_per_second_series"]),
     })
 
 

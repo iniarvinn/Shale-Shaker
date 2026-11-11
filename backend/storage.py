@@ -1,8 +1,18 @@
+import json
 import os
 from pathlib import Path
 
 import pymysql
 from pymysql.cursors import DictCursor
+
+
+# Kolom statistik batu per detik; ditambahkan otomatis ke tabel lama (lihat _migrate_columns)
+STONE_COLUMNS = {
+    "stones_per_second": "DOUBLE NOT NULL DEFAULT 0",
+    "current_stones_per_second": "DOUBLE NOT NULL DEFAULT 0",
+    "max_stones_per_second": "DOUBLE NOT NULL DEFAULT 0",
+    "stones_per_second_series": "LONGTEXT NULL",  # JSON: [{"second": 0, "stones": 12.5}, ...]
+}
 
 
 class Storage:
@@ -14,6 +24,7 @@ class Storage:
         self.database = os.getenv("MYSQL_DATABASE", "shale_shaker")
         self._create_database()
         self._create_table()
+        self._migrate_columns()
 
     def _connect(self, include_database=True):
         settings = {
@@ -65,6 +76,19 @@ class Storage:
                     """
                 )
 
+    def _migrate_columns(self):
+        with self._connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT COLUMN_NAME FROM information_schema.COLUMNS "
+                    "WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'videos'",
+                    (self.database,),
+                )
+                existing = {row["COLUMN_NAME"] for row in cursor.fetchall()}
+                for name, definition in STONE_COLUMNS.items():
+                    if name not in existing:
+                        cursor.execute(f"ALTER TABLE videos ADD COLUMN `{name}` {definition}")
+
     def create_video(self, video_id, filename, original_path, created_at):
         with self._connect() as connection:
             with connection.cursor() as cursor:
@@ -101,9 +125,12 @@ class Storage:
             "status", "progress", "duration_seconds", "total_frames",
             "processed_frames", "frames_with_stone", "total_detected_instances",
             "average_coverage", "max_coverage", "error_message", "completed_at",
-            "result_path", "thumbnail_path",
+            "result_path", "thumbnail_path", *STONE_COLUMNS,
         }
         values = {key: value for key, value in fields.items() if key in allowed}
+        series = values.get("stones_per_second_series")
+        if series is not None and not isinstance(series, str):
+            values["stones_per_second_series"] = json.dumps(series)
         if not values:
             return
         assignments = ", ".join(f"`{key}` = %s" for key in values)

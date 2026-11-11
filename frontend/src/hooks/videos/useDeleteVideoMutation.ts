@@ -6,7 +6,9 @@ export function useDeleteVideoMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteVideoService.deleteVideo(id),
-    onSuccess: () => {
+    // onSettled (bukan onSuccess): daftar tetap disegarkan walau request gagal/500,
+    // karena baris di database bisa saja sudah terhapus lebih dulu.
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: videoKeys.lists() });
     },
   });

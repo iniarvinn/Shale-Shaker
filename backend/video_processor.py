@@ -102,21 +102,21 @@ def process_video(input_path, output_path, thumbnail_path, on_progress):
     per_second = {}
 
     def build_stats(current_total_frames):
-        # rata-rata batu per frame untuk setiap detik
-        values = [s / n for s, n in per_second.values()]
+        # jumlah batu terdeteksi (dijumlahkan dari semua frame) untuk setiap detik
+        values = [s for s, _ in per_second.values()]
         last_second = max(per_second) if per_second else 0
-        last_sum, last_n = per_second.get(last_second, [0, 1])
+        last_sum = per_second.get(last_second, [0, 0])[0]
         return {
             "status": "processing",
             "total_frames": current_total_frames,
             "processed_frames": processed,
             "frames_with_stone": frames_with_stone,
-            "stones_per_second": sum(values) / len(values) if values else 0.0,  # rata-rata keseluruhan
-            "current_stones_per_second": last_sum / last_n,                      # detik terakhir
-            "max_stones_per_second": max(values) if values else 0.0,
+            "stones_per_second": round(sum(values) / len(values)) if values else 0,  # rata-rata keseluruhan
+            "current_stones_per_second": last_sum,                                    # detik terakhir
+            "max_stones_per_second": max(values) if values else 0,
             "stones_per_second_series": [
-                {"second": sec, "stones": round(s / n, 2)}
-                for sec, (s, n) in sorted(per_second.items())
+                {"second": sec, "stones": s}
+                for sec, (s, _) in sorted(per_second.items())
             ],
             "average_coverage": coverage_sum / processed if processed else 0.0,
             "max_coverage": max_coverage,

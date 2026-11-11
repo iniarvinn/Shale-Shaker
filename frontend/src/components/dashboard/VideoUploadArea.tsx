@@ -14,10 +14,11 @@ type Props = {
   video: VideoItem | null
   onFile: (file: File) => void
   onReset: () => void
+  videoRef?: React.Ref<HTMLVideoElement>
   error?: UploadError | null
 }
 
-export function VideoUploadArea({ state, progress, video, onFile, onReset, error }: Props) {
+export function VideoUploadArea({ state, progress, video, onFile, onReset, videoRef, error }: Props) {
   const [isDragging, setIsDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -86,6 +87,7 @@ export function VideoUploadArea({ state, progress, video, onFile, onReset, error
           autoPlay
           muted
           playsInline
+          ref={videoRef}
           className="w-full aspect-1280/720 bg-black object-contain"
         />
         <div className="mt-4 flex justify-end">

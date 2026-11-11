@@ -1,3 +1,8 @@
+export type BackendStonePoint = {
+  second: number;
+  stones: number;
+};
+
 export type BackendVideo = {
   id: string;
   original_filename: string;
@@ -11,6 +16,10 @@ export type BackendVideo = {
   processed_frames: number | null;
   frames_with_stone: number | null;
   total_detected_instances: number | null;
+  stones_per_second?: number | null;
+  current_stones_per_second?: number | null;
+  max_stones_per_second?: number | null;
+  stones_per_second_series?: BackendStonePoint[] | null;
   average_coverage: number | null;
   max_coverage: number | null;
   error_message: string | null;
@@ -34,6 +43,7 @@ export type BackendVideoStatusResponse = {
   processed_frames: number | null;
   total_frames: number | null;
   error_message: string | null;
+  stones_per_second_series?: BackendStonePoint[] | null;
 };
 
 export type BackendUploadResponse = {

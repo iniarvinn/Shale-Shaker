@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { getVideoByIdService, getVideoStatusService, uploadVideoService } from '#/services/videos';
 import { videoKeys } from '#/hooks/queryKeys';
-import type { VideoItem } from '#/types/video';
+import { mapStoneSeries } from '#/mappers/video.mapper';
+import type { StonePoint, VideoItem } from '#/types/video';
 
 function normalizeProcessingError(message?: string | null): string {
   if (!message) return 'Proses deteksi gagal.'
@@ -30,6 +31,7 @@ export function useUploadVideoMutation() {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<number>(0);
   const [liveStoneCount, setLiveStoneCount] = useState<number>(0);
+  const [liveSeries, setLiveSeries] = useState<StonePoint[]>([]);
   const [liveProgress, setLiveProgress] = useState<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -51,6 +53,7 @@ export function useUploadVideoMutation() {
       setProgress(0);
       setLiveProgress(0);
       setLiveStoneCount(0);
+      setLiveSeries([]);
       const uploadRes = await uploadVideoService.uploadVideo(file);
       const videoId = uploadRes.id;
 
@@ -69,6 +72,9 @@ export function useUploadVideoMutation() {
             if (typeof videoDetail.stoneCount === 'number') {
               setLiveStoneCount(videoDetail.stoneCount);
             }
+            // Seri dikirim lengkap oleh backend (titik terakhir masih berubah), jadi diganti, bukan di-append.
+            const series = mapStoneSeries(statusRes.stones_per_second_series ?? undefined);
+            setLiveSeries(series.length > 0 ? series : videoDetail.stoneSeries);
 
             if (statusRes.status === 'completed') {
               stopPolling();
@@ -97,6 +103,7 @@ export function useUploadVideoMutation() {
       setProgress(0);
       setLiveProgress(0);
       setLiveStoneCount(0);
+      setLiveSeries([]);
       stopPolling();
     },
     onSettled: () => {
@@ -109,10 +116,11 @@ export function useUploadVideoMutation() {
     setProgress(0);
     setLiveProgress(0);
     setLiveStoneCount(0);
+    setLiveSeries([]);
     mutation.reset();
   };
 
-  return { ...mutation, progress: liveProgress || progress, liveStoneCount, reset };
+  return { ...mutation, progress: liveProgress || progress, liveStoneCount, liveSeries, reset };
 }
 
 // Backwards compatible export

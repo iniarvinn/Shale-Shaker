@@ -1,3 +1,8 @@
+export type StonePoint = {
+  second: number
+  stones: number
+}
+
 export type VideoItem = {
   id: string
   title: string // contoh "Video 2026-11-13 14:32"
@@ -5,5 +10,6 @@ export type VideoItem = {
   thumbnailUrl: string
   videoUrl: string
   stoneCount: number
+  stoneSeries: StonePoint[] // batu per detik, kosong jika belum tersedia
   createdAt: string // ISO date
 }
