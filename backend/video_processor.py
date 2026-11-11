@@ -94,9 +94,35 @@ def process_video(input_path, output_path, thumbnail_path, on_progress):
         raise RuntimeError(f"Unable to create output video: {output_path}")
 
     detector = StoneDetector()
-    processed = frames_with_stone = total_instances = 0
+    processed = frames_with_stone = 0
     coverage_sum = max_coverage = 0.0
     thumbnail_written = False
+
+    # {detik_ke: [total_batu_di_semua_frame, jumlah_frame]}
+    per_second = {}
+
+    def build_stats(current_total_frames):
+        # rata-rata batu per frame untuk setiap detik
+        values = [s / n for s, n in per_second.values()]
+        last_second = max(per_second) if per_second else 0
+        last_sum, last_n = per_second.get(last_second, [0, 1])
+        return {
+            "status": "processing",
+            "total_frames": current_total_frames,
+            "processed_frames": processed,
+            "frames_with_stone": frames_with_stone,
+            "stones_per_second": sum(values) / len(values) if values else 0.0,  # rata-rata keseluruhan
+            "current_stones_per_second": last_sum / last_n,                      # detik terakhir
+            "max_stones_per_second": max(values) if values else 0.0,
+            "stones_per_second_series": [
+                {"second": sec, "stones": round(s / n, 2)}
+                for sec, (s, n) in sorted(per_second.items())
+            ],
+            "average_coverage": coverage_sum / processed if processed else 0.0,
+            "max_coverage": max_coverage,
+            "duration_seconds": processed / fps,
+        }
+
     try:
         while True:
             success, frame = capture.read()
@@ -111,24 +137,21 @@ def process_video(input_path, output_path, thumbnail_path, on_progress):
             if result.masks is not None:
                 coverage = float(result.masks.data.sum()) / (height * width) * 100
             frames_with_stone += int(count > 0)
-            total_instances += count
             coverage_sum += coverage
             max_coverage = max(max_coverage, coverage)
+
+            # kelompokkan per detik video
+            second = int((processed - 1) / fps)
+            bucket = per_second.setdefault(second, [0, 0])
+            bucket[0] += count
+            bucket[1] += 1
+
             if not thumbnail_written:
                 cv2.imwrite(str(thumbnail_path), annotated)
                 thumbnail_written = True
             if processed == 1 or processed % 10 == 0:
                 progress = int(processed / total_frames * 100) if total_frames else 0
-                on_progress(progress, {
-                    "status": "processing",
-                    "total_frames": total_frames,
-                    "processed_frames": processed,
-                    "frames_with_stone": frames_with_stone,
-                    "total_detected_instances": total_instances,
-                    "average_coverage": coverage_sum / processed,
-                    "max_coverage": max_coverage,
-                    "duration_seconds": processed / fps,
-                })
+                on_progress(progress, build_stats(total_frames))
     finally:
         capture.release()
         writer.release()
@@ -138,13 +161,4 @@ def process_video(input_path, output_path, thumbnail_path, on_progress):
 
     _remux_to_browser_friendly(output_path)
 
-    on_progress(100, {
-        "status": "processing",
-        "total_frames": total_frames or processed,
-        "processed_frames": processed,
-        "frames_with_stone": frames_with_stone,
-        "total_detected_instances": total_instances,
-        "average_coverage": coverage_sum / processed,
-        "max_coverage": max_coverage,
-        "duration_seconds": processed / fps,
-    })
+    on_progress(100, build_stats(total_frames or processed))
