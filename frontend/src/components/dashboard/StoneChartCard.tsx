@@ -94,9 +94,9 @@ export function StoneChartCard({ series, isLive = false, videoRef }: Props) {
                   batu/dtk{following ? ` · ${formatSecondsToMMSS(playSecond)}` : ''}
                 </span>
               </div>
-              <div className="text-right text-xs text-brand-text">
+              {/* <div className="text-right text-xs text-brand-text">
                 Puncak <span className="font-semibold">{Math.round(peak)}</span>
-              </div>
+              </div> */}
             </div>
             <div className="relative">
             <ChartContainer config={chartConfig} className="aspect-auto h-32 w-full">
