@@ -73,7 +73,7 @@ export function StoneChartCard({ series, isLive = false, videoRef }: Props) {
       <CardHeader className="pb-0 px-4">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base font-bold text-brand-text">Jumlah Batu</CardTitle>
-          {isLive && (
+          {/* {isLive && (
             <span className="flex items-center gap-1 text-xs text-brand-text">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
@@ -81,7 +81,7 @@ export function StoneChartCard({ series, isLive = false, videoRef }: Props) {
               </span>
               Live
             </span>
-          )}
+          )} */}
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-2">
