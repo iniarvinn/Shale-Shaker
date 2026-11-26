@@ -1,0 +1,32 @@
+.git
+.github
+node_modules
+.output
+.netlify
+.tanstack
+dist
+dist-ssr
+build
+out
+coverage
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE & OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Dokumentasi & file Docker
+*.md
+docs
+Dockerfile
+.dockerignore
+docker-compose*.yml
+compose*.yml
+
+# Env: jangan sampai rahasia ikut ke image
+.env*
+!.env.example

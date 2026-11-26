@@ -1,0 +1,29 @@
+# Dipakai di server (VPS). Image dibuild di CI dan ditarik dari registry.
+#   docker compose -f compose.prod.yml pull frontend
+#   docker compose -f compose.prod.yml up -d
+# Ganti `docker` dengan `podman` bila server memakai Podman.
+services:
+  frontend:
+    image: ghcr.io/iniarvinn/shale-shaker-frontend:latest
+    # Rollback: ganti `latest` dengan SHA commit sebelumnya (tag ...-frontend:<sha>).
+    container_name: shale_shaker_frontend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:3010:3000"
+    networks:
+      - jsa_net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
+
+networks:
+  jsa_net:
+    external: true
