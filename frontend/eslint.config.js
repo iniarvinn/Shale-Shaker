@@ -15,6 +15,15 @@ export default [
     },
   },
   {
-    ignores: ['eslint.config.js', 'prettier.config.js'],
+    ignores: [
+      'eslint.config.js',
+      'prettier.config.js',
+      '.output/**',
+      'dist/**',
+      '.netlify/**',
+      '.tanstack/**',
+      // Kode bawaan shadcn (generated), punya pelanggaran lint yang sudah ada sebelumnya.
+      'src/components/ui/chart.tsx',
+    ],
   },
 ]

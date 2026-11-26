@@ -27,7 +27,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function StoneChartCard({ series, isLive = false, videoRef }: Props) {
+export function StoneChartCard({ series, videoRef }: Props) {
   const hasData = series.length > 0
   const lastPoint = hasData ? series[series.length - 1] : null
   const maxSecond = lastPoint?.second ?? 0
@@ -66,7 +66,6 @@ export function StoneChartCard({ series, isLive = false, videoRef }: Props) {
 
   // Saat video diputar, angka besar mengikuti detik yang sedang diputar
   const shown = following ? (series.find((p) => p.second === playSecond) ?? lastPoint) : lastPoint
-  const peak = hasData ? Math.max(...series.map((p) => p.stones)) : 0
 
   return (
     <Card className="rounded-xl border border-neutral-200 shadow-sm pt-4">
