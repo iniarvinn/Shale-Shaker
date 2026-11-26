@@ -1,6 +1,8 @@
 [build]
   command = "vite build"
   publish = "dist/client"
+  [build.environment]
+    DEPLOY_TARGET = "netlify"
 [dev]
   command = "pnpm dev"
   targetPort = 3000
